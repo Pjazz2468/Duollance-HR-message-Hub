@@ -545,7 +545,7 @@ export default function KnowledgePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Duollance AI</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Duo AI</h1>
         <p className="text-muted-foreground mt-1">
           Ask questions, get instant answers, and keep the AI up to date with your latest docs.
         </p>

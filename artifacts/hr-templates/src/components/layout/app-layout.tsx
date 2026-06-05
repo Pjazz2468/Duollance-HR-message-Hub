@@ -11,7 +11,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Templates", href: "/templates", icon: FileText },
     { name: "Categories", href: "/categories", icon: Tags },
-    { name: "Duollance AI", href: "/knowledge", icon: Bot },
+    { name: "Duo AI", href: "/knowledge", icon: Bot },
   ];
 
   return (
