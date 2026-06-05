@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Save, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, Save, Sparkles } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const CHANNELS = ["Email", "LinkedIn", "WhatsApp", "Twitter/X DM", "Instagram DM", "SMS"];
@@ -44,7 +44,6 @@ export default function TemplateFormPage() {
   const queryClient = useQueryClient();
 
   const [suggestion, setSuggestion] = useState<Suggestion>(null);
-  const [isSuggesting, setIsSuggesting] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const { data: template, isLoading: isTemplateLoading } = useGetTemplate(templateId, {
@@ -83,6 +82,24 @@ export default function TemplateFormPage() {
     }
   }, [template, isNew, form]);
 
+  // Client-side keyword scoring — no API call needed
+  function scoreCategory(title: string, categoryName: string): number {
+    const normalize = (s: string) =>
+      s.toLowerCase().replace(/[-_/]/g, " ").split(/\s+/).filter(Boolean);
+    const stopWords = new Set(["a", "an", "the", "to", "for", "with", "and", "or", "of", "in", "on", "at", "by", "up", "as"]);
+    const titleTokens = normalize(title).filter((w) => !stopWords.has(w));
+    const catTokens = normalize(categoryName).filter((w) => !stopWords.has(w));
+    let score = 0;
+    for (const tw of titleTokens) {
+      for (const cw of catTokens) {
+        if (tw === cw) score += 4;
+        else if (tw.startsWith(cw) || cw.startsWith(tw)) score += 2;
+        else if (tw.includes(cw) || cw.includes(tw)) score += 1;
+      }
+    }
+    return score;
+  }
+
   useEffect(() => {
     if (!isNew) return;
     if (!titleValue || titleValue.trim().length < 4 || !categories || categories.length === 0) {
@@ -95,29 +112,19 @@ export default function TemplateFormPage() {
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setIsSuggesting(true);
-      try {
-        const res = await fetch("/api/ai/suggest-category", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: titleValue.trim(),
-            categories: categories.map((c) => ({ id: c.id, name: c.name })),
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json() as { categoryId: number; categoryName: string };
-          setSuggestion(data);
-        } else {
-          setSuggestion(null);
+    debounceRef.current = setTimeout(() => {
+      const title = titleValue.trim();
+      let best: { categoryId: number; categoryName: string } | null = null;
+      let bestScore = 0;
+      for (const cat of categories) {
+        const score = scoreCategory(title, cat.name);
+        if (score > bestScore) {
+          bestScore = score;
+          best = { categoryId: cat.id, categoryName: cat.name };
         }
-      } catch {
-        setSuggestion(null);
-      } finally {
-        setIsSuggesting(false);
       }
-    }, 700);
+      setSuggestion(bestScore > 0 ? best : null);
+    }, 500);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -222,23 +229,16 @@ export default function TemplateFormPage() {
                         </SelectContent>
                       </Select>
 
-                      {isNew && (isSuggesting || suggestion) && (
+                      {isNew && suggestion && (
                         <div className="flex items-center gap-2 mt-2">
-                          {isSuggesting ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              Suggesting category…
-                            </span>
-                          ) : suggestion ? (
-                            <button
-                              type="button"
-                              onClick={applySuggestion}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/8 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            >
-                              <Sparkles className="w-3 h-3" />
-                              Suggested: {suggestion.categoryName}
-                            </button>
-                          ) : null}
+                          <button
+                            type="button"
+                            onClick={applySuggestion}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/8 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Suggested: {suggestion.categoryName}
+                          </button>
                         </div>
                       )}
 
