@@ -83,6 +83,31 @@ export interface Stats {
   categoryBreakdown: CategoryCount[];
 }
 
+export interface KnowledgeDoc {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeDocInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  content: string;
+  category?: string;
+}
+
+export interface KnowledgeDocUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @minLength 1 */
+  content?: string;
+  category?: string;
+}
+
 export type ListTemplatesParams = {
 categoryId?: number;
 channel?: string;

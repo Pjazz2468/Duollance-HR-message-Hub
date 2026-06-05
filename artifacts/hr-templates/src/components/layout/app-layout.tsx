@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FileText, Tags, Plus, Home } from "lucide-react";
+import { FileText, Tags, Plus, Home, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoWhite from "@assets/Duollance_white@300x_1780686386162.png";
 
@@ -11,6 +11,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Templates", href: "/templates", icon: FileText },
     { name: "Categories", href: "/categories", icon: Tags },
+    { name: "Duollance AI", href: "/knowledge", icon: Bot },
   ];
 
   return (

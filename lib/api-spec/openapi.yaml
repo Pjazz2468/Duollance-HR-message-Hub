@@ -16,6 +16,8 @@ tags:
     description: Message template operations
   - name: stats
     description: Stats and analytics
+  - name: knowledge
+    description: Knowledge base document operations
 paths:
   /healthz:
     get:
@@ -249,6 +251,80 @@ paths:
               schema:
                 $ref: "#/components/schemas/Stats"
 
+  /knowledge:
+    get:
+      operationId: listKnowledgeDocs
+      tags: [knowledge]
+      summary: List all knowledge documents
+      responses:
+        "200":
+          description: List of knowledge docs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KnowledgeDoc"
+    post:
+      operationId: createKnowledgeDoc
+      tags: [knowledge]
+      summary: Create a new knowledge document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KnowledgeDocInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDoc"
+
+  /knowledge/{id}:
+    patch:
+      operationId: updateKnowledgeDoc
+      tags: [knowledge]
+      summary: Update a knowledge document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KnowledgeDocUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeDoc"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteKnowledgeDoc
+      tags: [knowledge]
+      summary: Delete a knowledge document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /stats/top-templates:
     get:
       operationId: getTopTemplates
@@ -422,3 +498,45 @@ components:
           type: string
         count:
           type: integer
+
+    KnowledgeDoc:
+      type: object
+      required: [id, title, content, category, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    KnowledgeDocInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+        category:
+          type: string
+
+    KnowledgeDocUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+        category:
+          type: string

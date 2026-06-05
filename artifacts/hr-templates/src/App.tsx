@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import TemplatesList from "@/pages/templates/index";
 import TemplateFormPage from "@/pages/templates/form";
 import CategoriesList from "@/pages/categories";
+import KnowledgePage from "@/pages/knowledge";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/templates/new" component={TemplateFormPage} />
         <Route path="/templates/:id" component={TemplateFormPage} />
         <Route path="/categories" component={CategoriesList} />
+        <Route path="/knowledge" component={KnowledgePage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

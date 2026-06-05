@@ -228,6 +228,69 @@ export const GetStatsResponse = zod.object({
 
 
 /**
+ * @summary List all knowledge documents
+ */
+export const ListKnowledgeDocsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListKnowledgeDocsResponse = zod.array(ListKnowledgeDocsResponseItem)
+
+
+/**
+ * @summary Create a new knowledge document
+ */
+
+
+
+
+export const CreateKnowledgeDocBody = zod.object({
+  "title": zod.string().min(1),
+  "content": zod.string().min(1),
+  "category": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a knowledge document
+ */
+export const UpdateKnowledgeDocParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateKnowledgeDocBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "content": zod.string().min(1).optional(),
+  "category": zod.string().optional()
+})
+
+export const UpdateKnowledgeDocResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a knowledge document
+ */
+export const DeleteKnowledgeDocParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get top used templates
  */
 export const GetTopTemplatesQueryParams = zod.object({
