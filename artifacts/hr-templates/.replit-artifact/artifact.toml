@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Duollance HR Template Hub"
+version = "1.0.0"
+id = "artifacts/hr-templates"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24906
+
+[services.development]
+run = "pnpm --filter @workspace/hr-templates run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hr-templates", "run", "build" ]
+publicDir = "artifacts/hr-templates/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24906"
+BASE_PATH = "/"
