@@ -1,11 +1,12 @@
 import { Router } from "express";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { db, knowledgeDocsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const MODEL = "gemini-2.0-flash-lite";
 
 async function getKnowledgeContext(): Promise<string> {
   try {
@@ -47,28 +48,25 @@ router.post("/refine", async (req, res) => {
   try {
     const knowledgeContext = await getKnowledgeContext();
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 1024,
-      messages: [
-        {
-          role: "system",
-          content: `${DUOLLANCE_BRAND_CONTEXT}${knowledgeContext}
+    const systemInstruction = `${DUOLLANCE_BRAND_CONTEXT}${knowledgeContext}
 
 Your job is to refine message templates used by the HR and growth team for client acquisition outreach.
 When refining, preserve the core message intent and any {variable} placeholders exactly as-is.
-Return ONLY the refined message text — no preamble, no "Here is the refined version:", no explanation.`,
-        },
+Return ONLY the refined message text — no preamble, no "Here is the refined version:", no explanation.`;
+
+    const stream = await genai.models.generateContentStream({
+      model: MODEL,
+      config: { systemInstruction, maxOutputTokens: 1024 },
+      contents: [
         {
           role: "user",
-          content: `Here is the original template:\n\n${templateContent}\n\nInstruction: ${instruction}`,
+          parts: [{ text: `Here is the original template:\n\n${templateContent}\n\nInstruction: ${instruction}` }],
         },
       ],
-      stream: true,
     });
 
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
+      const content = chunk.text;
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
@@ -101,22 +99,23 @@ router.post("/chat", async (req, res) => {
   try {
     const knowledgeContext = await getKnowledgeContext();
 
-    const systemPrompt = `${DUOLLANCE_BRAND_CONTEXT}${knowledgeContext}
+    const systemInstruction = `${DUOLLANCE_BRAND_CONTEXT}${knowledgeContext}
 
 You are the Duollance internal AI assistant helping the HR and growth team. Answer questions accurately and concisely based on your knowledge of Duollance. If you don't know something, say so honestly rather than guessing. Keep responses focused and practical — the team is busy and needs fast, reliable answers.`;
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 1024,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-      stream: true,
+    const contents = messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const stream = await genai.models.generateContentStream({
+      model: MODEL,
+      config: { systemInstruction, maxOutputTokens: 1024 },
+      contents,
     });
 
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
+      const content = chunk.text;
       if (content) {
         res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
@@ -146,22 +145,21 @@ router.post("/suggest-category", async (req, res) => {
   try {
     const categoryList = categories.map((c) => `- ID ${c.id}: ${c.name}`).join("\n");
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_completion_tokens: 20,
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful assistant for an HR team that writes outreach message templates. Given a template title, pick the single most appropriate category from the provided list. Reply with ONLY the numeric category ID — nothing else.`,
-        },
+    const response = await genai.models.generateContent({
+      model: MODEL,
+      config: {
+        systemInstruction: `You are a helpful assistant for an HR team that writes outreach message templates. Given a template title, pick the single most appropriate category from the provided list. Reply with ONLY the numeric category ID — nothing else.`,
+        maxOutputTokens: 10,
+      },
+      contents: [
         {
           role: "user",
-          content: `Template title: "${title}"\n\nAvailable categories:\n${categoryList}\n\nRespond with only the category ID number.`,
+          parts: [{ text: `Template title: "${title}"\n\nAvailable categories:\n${categoryList}\n\nRespond with only the category ID number.` }],
         },
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    const raw = response.text?.trim() ?? "";
     const categoryId = parseInt(raw, 10);
     const matched = categories.find((c) => c.id === categoryId);
 

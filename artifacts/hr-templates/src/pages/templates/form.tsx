@@ -112,8 +112,29 @@ export default function TemplateFormPage() {
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
+    debounceRef.current = setTimeout(async () => {
       const title = titleValue.trim();
+
+      // Try AI suggestion first, fall back to keyword scoring
+      try {
+        const res = await fetch("/api/ai/suggest-category", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            categories: categories.map((c) => ({ id: c.id, name: c.name })),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { categoryId: number; categoryName: string };
+          setSuggestion(data);
+          return;
+        }
+      } catch {
+        // fall through to keyword scoring
+      }
+
+      // Client-side keyword fallback
       let best: { categoryId: number; categoryName: string } | null = null;
       let bestScore = 0;
       for (const cat of categories) {
@@ -124,7 +145,7 @@ export default function TemplateFormPage() {
         }
       }
       setSuggestion(bestScore > 0 ? best : null);
-    }, 500);
+    }, 600);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
