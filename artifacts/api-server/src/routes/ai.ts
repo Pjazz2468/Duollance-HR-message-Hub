@@ -131,4 +131,50 @@ You are the Duollance internal AI assistant helping the HR and growth team. Answ
   }
 });
 
+// POST /api/ai/suggest-category — suggest a category based on template title (non-streaming)
+router.post("/suggest-category", async (req, res) => {
+  const { title, categories } = req.body as {
+    title?: string;
+    categories?: Array<{ id: number; name: string }>;
+  };
+
+  if (!title || !categories || categories.length === 0) {
+    res.status(400).json({ error: "title and categories are required" });
+    return;
+  }
+
+  try {
+    const categoryList = categories.map((c) => `- ID ${c.id}: ${c.name}`).join("\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 20,
+      messages: [
+        {
+          role: "system",
+          content: `You are a helpful assistant for an HR team that writes outreach message templates. Given a template title, pick the single most appropriate category from the provided list. Reply with ONLY the numeric category ID — nothing else.`,
+        },
+        {
+          role: "user",
+          content: `Template title: "${title}"\n\nAvailable categories:\n${categoryList}\n\nRespond with only the category ID number.`,
+        },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    const categoryId = parseInt(raw, 10);
+    const matched = categories.find((c) => c.id === categoryId);
+
+    if (!matched) {
+      res.status(422).json({ error: "Could not determine a category" });
+      return;
+    }
+
+    res.json({ categoryId: matched.id, categoryName: matched.name });
+  } catch (err) {
+    logger.error(err, "AI suggest-category error");
+    res.status(500).json({ error: "Suggestion failed" });
+  }
+});
+
 export default router;

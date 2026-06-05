@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { 
   useGetTemplate, 
@@ -10,7 +10,7 @@ import {
   useDeleteTemplate
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Trash2, Save, Sparkles, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const CHANNELS = ["Email", "LinkedIn", "WhatsApp", "Twitter/X DM", "Instagram DM", "SMS"];
@@ -32,6 +32,8 @@ const formSchema = z.object({
   channels: z.array(z.string()).min(1, "Select at least one channel"),
 });
 
+type Suggestion = { categoryId: number; categoryName: string } | null;
+
 export default function TemplateFormPage() {
   const [, params] = useRoute("/templates/:id");
   const [, setLocation] = useLocation();
@@ -40,6 +42,10 @@ export default function TemplateFormPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const [suggestion, setSuggestion] = useState<Suggestion>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const { data: template, isLoading: isTemplateLoading } = useGetTemplate(templateId, {
     query: { queryKey: getGetTemplateQueryKey(templateId), enabled: !isNew }
@@ -63,6 +69,9 @@ export default function TemplateFormPage() {
     },
   });
 
+  const titleValue = useWatch({ control: form.control, name: "title" });
+  const categoryIdValue = useWatch({ control: form.control, name: "categoryId" });
+
   useEffect(() => {
     if (template && !isNew) {
       form.reset({
@@ -73,6 +82,53 @@ export default function TemplateFormPage() {
       });
     }
   }, [template, isNew, form]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    if (!titleValue || titleValue.trim().length < 4 || !categories || categories.length === 0) {
+      setSuggestion(null);
+      return;
+    }
+    if (categoryIdValue && categoryIdValue > 0) {
+      setSuggestion(null);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setIsSuggesting(true);
+      try {
+        const res = await fetch("/api/ai/suggest-category", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: titleValue.trim(),
+            categories: categories.map((c) => ({ id: c.id, name: c.name })),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { categoryId: number; categoryName: string };
+          setSuggestion(data);
+        } else {
+          setSuggestion(null);
+        }
+      } catch {
+        setSuggestion(null);
+      } finally {
+        setIsSuggesting(false);
+      }
+    }, 700);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [titleValue, categories, categoryIdValue, isNew]);
+
+  const applySuggestion = () => {
+    if (!suggestion) return;
+    form.setValue("categoryId", suggestion.categoryId, { shouldValidate: true });
+    setSuggestion(null);
+  };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (isNew) {
@@ -148,7 +204,10 @@ export default function TemplateFormPage() {
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <Select 
-                        onValueChange={(v) => field.onChange(Number(v))} 
+                        onValueChange={(v) => {
+                          field.onChange(Number(v));
+                          setSuggestion(null);
+                        }} 
                         value={field.value ? String(field.value) : undefined}
                       >
                         <FormControl>
@@ -162,6 +221,27 @@ export default function TemplateFormPage() {
                           ))}
                         </SelectContent>
                       </Select>
+
+                      {isNew && (isSuggesting || suggestion) && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {isSuggesting ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Suggesting category…
+                            </span>
+                          ) : suggestion ? (
+                            <button
+                              type="button"
+                              onClick={applySuggestion}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/8 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              Suggested: {suggestion.categoryName}
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
+
                       <FormMessage />
                     </FormItem>
                   )}
