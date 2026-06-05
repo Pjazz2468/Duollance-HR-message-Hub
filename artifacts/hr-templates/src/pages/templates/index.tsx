@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { 
   useListTemplates, 
@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Search, Star, MessageSquare } from "lucide-react";
+import { Copy, Search, Star, MessageSquare, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RefineModal } from "@/components/refine-modal";
 
 export default function TemplatesList() {
   const [search, setSearch] = useState("");
@@ -33,6 +34,7 @@ export default function TemplatesList() {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
+            data-testid="input-search-templates"
             placeholder="Search templates..." 
             className="pl-9 bg-card border-border shadow-sm focus-visible:ring-primary"
             value={search}
@@ -70,6 +72,7 @@ function TemplateCard({ template }: { template: any }) {
   const queryClient = useQueryClient();
   const recordUse = useRecordTemplateUse();
   const toggleFavorite = useToggleFavorite();
+  const [refineOpen, setRefineOpen] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(template.content);
@@ -94,56 +97,85 @@ function TemplateCard({ template }: { template: any }) {
   };
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden border-border hover:border-primary/30 transition-colors shadow-sm hover:shadow-md">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start gap-2">
-          <div className="space-y-2">
-            <Badge variant="outline" className="bg-secondary text-secondary-foreground font-medium text-xs rounded-md">
-              {template.categoryName || 'Uncategorized'}
-            </Badge>
-            <h3 className="font-semibold text-lg line-clamp-2 leading-tight">
-              <Link href={`/templates/${template.id}`} className="hover:text-primary transition-colors">
-                {template.title}
-              </Link>
-            </h3>
+    <>
+      <Card
+        data-testid={`card-template-${template.id}`}
+        className="flex flex-col h-full overflow-hidden border-border hover:border-primary/30 transition-colors shadow-sm hover:shadow-md"
+      >
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="space-y-2">
+              <Badge variant="outline" className="bg-secondary text-secondary-foreground font-medium text-xs rounded-md">
+                {template.categoryName || 'Uncategorized'}
+              </Badge>
+              <h3 className="font-semibold text-lg line-clamp-2 leading-tight">
+                <Link href={`/templates/${template.id}`} className="hover:text-primary transition-colors">
+                  {template.title}
+                </Link>
+              </h3>
+            </div>
+            <button 
+              data-testid={`button-favorite-${template.id}`}
+              onClick={handleFavorite}
+              className="text-muted-foreground hover:text-yellow-500 transition-colors shrink-0"
+            >
+              <Star className={`w-5 h-5 ${template.isFavorited ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            </button>
           </div>
-          <button 
-            onClick={handleFavorite}
-            className="text-muted-foreground hover:text-yellow-500 transition-colors"
-          >
-            <Star className={`w-5 h-5 ${template.isFavorited ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-          </button>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="flex-1 pb-4">
-        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-          {template.content}
-        </p>
+        </CardHeader>
         
-        <div className="flex flex-wrap gap-1 mt-auto">
-          {template.channels?.slice(0, 3).map((c: string) => (
-            <Badge key={c} variant="secondary" className="text-[10px] px-1.5 py-0">
-              {c}
-            </Badge>
-          ))}
-          {template.channels?.length > 3 && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              +{template.channels.length - 3}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-      
-      <CardFooter className="pt-0 border-t border-border mt-4 flex items-center justify-between p-4 bg-card/50">
-        <span className="text-xs font-medium text-muted-foreground">
-          {template.usageCount} uses
-        </span>
-        <Button onClick={handleCopy} size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-          <Copy className="w-3.5 h-3.5" />
-          Copy
-        </Button>
-      </CardFooter>
-    </Card>
+        <CardContent className="flex-1 pb-4">
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+            {template.content}
+          </p>
+          
+          <div className="flex flex-wrap gap-1 mt-auto">
+            {template.channels?.slice(0, 3).map((c: string) => (
+              <Badge key={c} variant="secondary" className="text-[10px] px-1.5 py-0">
+                {c}
+              </Badge>
+            ))}
+            {template.channels?.length > 3 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                +{template.channels.length - 3}
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+        
+        <CardFooter className="pt-0 border-t border-border mt-4 flex items-center justify-between p-4 bg-card/50 gap-2">
+          <span className="text-xs font-medium text-muted-foreground shrink-0">
+            {template.usageCount} uses
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              data-testid={`button-refine-${template.id}`}
+              onClick={() => setRefineOpen(true)}
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs h-8 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary"
+            >
+              <Sparkles className="w-3 h-3" />
+              Refine
+            </Button>
+            <Button
+              data-testid={`button-copy-${template.id}`}
+              onClick={handleCopy}
+              size="sm"
+              className="gap-1.5 h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <RefineModal
+        open={refineOpen}
+        onOpenChange={setRefineOpen}
+        template={{ id: template.id, title: template.title, content: template.content }}
+      />
+    </>
   );
 }
