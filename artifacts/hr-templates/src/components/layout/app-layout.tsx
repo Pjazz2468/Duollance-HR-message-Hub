@@ -19,7 +19,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     location === href || (href !== "/" && location.startsWith(href));
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* ── Desktop Sidebar ───────────────────────────────────────── */}
       <div className="hidden md:flex w-64 bg-sidebar border-r border-sidebar-border text-sidebar-foreground flex-col shrink-0">
         <div className="p-6">
