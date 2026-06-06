@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   useListKnowledgeDocs,
   getListKnowledgeDocsQueryKey,
@@ -29,6 +29,40 @@ import { cn } from "@/lib/utils";
 const KNOWLEDGE_CATEGORIES = [
   "General", "Brand & Tone", "Product", "Process", "FAQs", "Pricing", "Updates",
 ];
+
+// ─── Markdown renderer (bold, italic, bullets, line breaks) ───────────────────
+function MarkdownText({ content }: { content: string }) {
+  const parseInline = (text: string): React.ReactNode[] => {
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**"))
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      if (part.startsWith("*") && part.endsWith("*"))
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      return part;
+    });
+  };
+
+  const lines = content.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^[-*]\s/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+        items.push(<li key={i} className="ml-4 list-disc">{parseInline(lines[i].replace(/^[-*]\s/, ""))}</li>);
+        i++;
+      }
+      nodes.push(<ul key={`ul-${i}`} className="my-1 space-y-0.5">{items}</ul>);
+    } else {
+      nodes.push(<span key={i}>{parseInline(line)}</span>);
+      if (i < lines.length - 1) nodes.push(<br key={`br-${i}`} />);
+      i++;
+    }
+  }
+  return <>{nodes}</>;
+}
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -170,13 +204,15 @@ function ChatTab() {
             )}
             <div
               className={cn(
-                "max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-tr-sm"
+                  ? "bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap"
                   : "bg-card border border-border text-foreground rounded-tl-sm"
               )}
             >
-              {msg.content}
+              {msg.role === "assistant"
+                ? <MarkdownText content={msg.content} />
+                : msg.content}
               {isStreaming && i === messages.length - 1 && msg.role === "assistant" && !msg.content && (
                 <span className="inline-flex gap-1 items-center py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
