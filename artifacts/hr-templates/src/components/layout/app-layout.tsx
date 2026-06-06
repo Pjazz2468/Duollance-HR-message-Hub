@@ -104,7 +104,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* ── Main Content ──────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Mobile Top Bar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-sidebar border-b border-sidebar-border shrink-0">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-sidebar border-b border-sidebar-border">
           <img src={logoWhite} alt="Duollance" className="h-7 object-contain" />
           <div className="flex items-center gap-2">
             <Link href="/templates/new">
@@ -124,7 +124,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="p-4 md:p-8 max-w-6xl mx-auto w-full pb-20 md:pb-8">
+          <div className="p-4 pt-20 md:pt-4 md:p-8 max-w-6xl mx-auto w-full pb-24 md:pb-8">
             {children}
           </div>
         </main>
