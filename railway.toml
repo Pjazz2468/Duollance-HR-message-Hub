@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+installCmd = "pnpm install --no-frozen-lockfile"
+buildCmd = "cd artifacts/api-server && pnpm run build"
+startCmd = "cd artifacts/api-server && node dist/index.mjs"
