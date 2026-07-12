@@ -22,7 +22,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* ── Desktop Sidebar ───────────────────────────────────────── */}
       <div className="hidden md:flex w-64 bg-sidebar border-r border-sidebar-border text-sidebar-foreground flex-col shrink-0">
         <div className="p-6">
-          <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780916835273/Duollance_white@300x_1780916835273.png" alt="Duollance" className="h-8 object-contain" />
+          <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780919882/Gemini_Generated_Image_ry1yvkry1yvkry1y_h1dvmi.png" alt="Duollance" className="h-8 object-contain" />
         </div>
         <nav className="flex-1 px-4 space-y-2">
           {navigation.map((item) => (
@@ -62,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Drawer */}
           <div className="absolute left-0 top-0 h-full w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-sidebar-border">
-              <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780916835273/Duollance_white@300x_1780916835273.png" alt="Duollance" className="h-7 object-contain" />
+              <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780919882/Gemini_Generated_Image_ry1yvkry1yvkry1y_h1dvmi.png" alt="Duollance" className="h-7 object-contain" />
               <button onClick={() => setMobileMenuOpen(false)} className="text-sidebar-foreground/70 hover:text-sidebar-foreground">
                 <X className="w-5 h-5" />
               </button>
@@ -104,7 +104,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Mobile Top Bar */}
         <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-sidebar border-b border-sidebar-border">
-          <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780916835273/Duollance_white@300x_1780916835273.png" alt="Duollance" className="h-7 object-contain" />
+          <img src="https://res.cloudinary.com/dsmqkbssm/image/upload/q_auto/f_auto/v1780919882/Gemini_Generated_Image_ry1yvkry1yvkry1y_h1dvmi.png" alt="Duollance" className="h-7 object-contain" />
           <div className="flex items-center gap-2">
             <Link href="/templates/new">
               <div className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium">
